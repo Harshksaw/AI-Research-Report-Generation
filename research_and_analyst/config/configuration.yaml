@@ -21,7 +21,7 @@ llm:
     temperature: 0
     max_output_tokens: 2048
 
-  openai:
-     provider: "openai"
-     model_name: "gpt-4o"
-     temperature: 0
+  # openai:
+  #   provider: "openai"
+  #   model_name: "gpt-4o"
+  #   temperature: 0
