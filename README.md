@@ -34,17 +34,24 @@ Optional Astra DB settings used by the project:
 
 3. Optional: choose the LLM provider.
 
-If not set, the code defaults to `openai`.
+If not set, the code defaults to `google`.
 
 ```bash
-export LLM_PROVIDER=openai
+export LLM_PROVIDER=groq
 ```
 
 Supported values in the current config:
 
-- `openai`
 - `google`
 - `groq`
+
+Optional overrides:
+
+- `LLM_MODEL_NAME` to override the configured model for the selected provider
+- `LLM_FALLBACK_ORDER` to control provider fallback order when the primary provider is quota-limited. Default: `groq`
+- `EMBEDDING_MODEL_NAME` to override the configured embedding model
+
+If Google Gemini returns a quota error during LLM startup, the loader now attempts the providers listed in `LLM_FALLBACK_ORDER` as long as the corresponding API keys are present.
 
 ## Run Commands
 
@@ -60,7 +67,7 @@ Run the model loader test module:
 uv run python -m research_and_analyst.utils.model_loader
 ```
 
-This command needs the corresponding API key in `.env` or your shell environment.
+This command needs the corresponding API key in `.env` or your shell environment. If `LLM_PROVIDER=google`, Gemini quota exhaustion will surface during startup and can fall back to Groq when `GROQ_API_KEY` is configured.
 
 ## Notebook
 

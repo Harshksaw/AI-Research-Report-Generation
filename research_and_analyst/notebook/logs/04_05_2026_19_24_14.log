@@ -1,0 +1,18 @@
+{"timestamp": "2026-04-05T19:24:14.263375Z", "level": "info", "event": "GOOGLE_API_KEY loaded from environment"}
+{"timestamp": "2026-04-05T19:24:14.264676Z", "level": "info", "event": "GROQ_API_KEY loaded from environment"}
+{"timestamp": "2026-04-05T19:24:14.265280Z", "level": "warning", "event": "ASTRA_DB_API_ENDPOINT is missing from environment"}
+{"timestamp": "2026-04-05T19:24:14.265970Z", "level": "warning", "event": "ASTRA_DB_APPLICATION_TOKEN is missing from environment"}
+{"timestamp": "2026-04-05T19:24:14.266814Z", "level": "warning", "event": "ASTRA_DB_KEYSPACE is missing from environment"}
+{"config_keys": ["astra_db", "embedding_model", "retriever", "llm"], "timestamp": "2026-04-05T19:24:14.270059Z", "level": "info", "event": "YAML config loaded"}
+{"provider": "groq", "provider_key": "groq", "model": "deepseek-r1-distill-llama-70b", "timestamp": "2026-04-05T19:24:14.276578Z", "level": "info", "event": "Loading LLM"}
+HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 401 Unauthorized"
+{"timestamp": "2026-04-05T19:25:17.222219Z", "level": "info", "event": "GOOGLE_API_KEY loaded from environment"}
+{"timestamp": "2026-04-05T19:25:17.223255Z", "level": "info", "event": "GROQ_API_KEY loaded from environment"}
+{"timestamp": "2026-04-05T19:25:17.223985Z", "level": "warning", "event": "ASTRA_DB_API_ENDPOINT is missing from environment"}
+{"timestamp": "2026-04-05T19:25:17.224467Z", "level": "warning", "event": "ASTRA_DB_APPLICATION_TOKEN is missing from environment"}
+{"timestamp": "2026-04-05T19:25:17.225202Z", "level": "warning", "event": "ASTRA_DB_KEYSPACE is missing from environment"}
+{"config_keys": ["astra_db", "embedding_model", "retriever", "llm"], "timestamp": "2026-04-05T19:25:17.227374Z", "level": "info", "event": "YAML config loaded"}
+{"provider": "groq", "provider_key": "groq", "model": "deepseek-r1-distill-llama-70b", "timestamp": "2026-04-05T19:25:17.234280Z", "level": "info", "event": "Loading LLM"}
+HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 401 Unauthorized"
+HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 401 Unauthorized"
+HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 401 Unauthorized"
