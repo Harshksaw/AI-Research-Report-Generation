@@ -1,0 +1,51 @@
+graph TD
+    %% Define Nodes
+    Start((START))
+    CreateAnalyst[create_analyst: <br>Generate AI Analyst Personas]
+    HumanFeedback[human_feedback: <br>Pause for User Review]
+    
+    %% Conditional Branching
+    InitiateInterviews{initiate_all_interviews:<br>Map to Parallel Interviews}
+    End((END))
+    
+    %% Parallel Interview Sub-graph
+    ConductInterview[[conduct_interview: <br>Interview Graph Sub-workflow]]
+    
+    %% Parallel Writing Nodes
+    WriteReport[write_report: <br>Compile Main Sections]
+    WriteIntro[write_introduction: <br>Generate Introduction]
+    WriteConclusion[write_conclusion: <br>Generate Conclusion]
+    
+    %% Finalization
+    Finalize[finalize_report: <br>Assemble Final Document]
+
+    %% Edges
+    Start --> CreateAnalyst
+    CreateAnalyst --> HumanFeedback
+    
+    %% Human-in-the-loop interruption happens at HumanFeedback
+    HumanFeedback -.-> InitiateInterviews
+    
+    InitiateInterviews -- If Analysts Exist --> ConductInterview
+    InitiateInterviews -- If No Analysts --> End
+    
+    %% After all parallel interviews finish, fan-out to writing
+    ConductInterview --> WriteReport
+    ConductInterview --> WriteIntro
+    ConductInterview --> WriteConclusion
+    
+    %% Fan-in to finalize
+    WriteReport --> Finalize
+    WriteIntro --> Finalize
+    WriteConclusion --> Finalize
+    
+    Finalize --> End
+
+    classDef default fill:#1E293B,stroke:#64748B,stroke-width:2px,color:#F8FAFC;
+    classDef conditional fill:#B45309,stroke:#F59E0B,stroke-width:2px,color:#FFF;
+    classDef parallel fill:#0369A1,stroke:#38BDF8,stroke-width:2px,color:#FFF;
+    classDef startend fill:#047857,stroke:#34D399,stroke-width:2px,color:#FFF;
+    
+    class Start,End startend;
+    class InitiateInterviews conditional;
+    class WriteReport,WriteIntro,WriteConclusion parallel;
