@@ -1,13 +1,18 @@
+import { getDeviceId } from '../lib/fingerprint'
+
 const BASE = '/api'
 
 interface RequestOptions extends RequestInit {
   headers?: Record<string, string>
 }
 
+function deviceHeaders(): Record<string, string> {
+  return { 'X-Device-ID': getDeviceId() }
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...deviceHeaders(), ...options.headers },
     ...options,
   })
   const data = await res.json()
@@ -23,10 +28,18 @@ export type SSEEvent =
   | { type: 'complete' }
   | { type: 'error';        message: string }
 
+export interface ReportRecord {
+  thread_id:  string
+  topic:      string
+  status:     'in_progress' | 'completed'
+  created_at: string
+  docx_path:  string | null
+  pdf_path:   string | null
+}
+
 async function* streamSSE(path: string, options: RequestOptions = {}): AsyncGenerator<SSEEvent> {
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...deviceHeaders(), ...options.headers },
     ...options,
   })
   if (!res.ok) {
@@ -50,16 +63,6 @@ async function* streamSSE(path: string, options: RequestOptions = {}): AsyncGene
 }
 
 export const api = {
-  login:  (username: string, password: string) =>
-    request<{ username: string }>('/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
-
-  signup: (username: string, password: string) =>
-    request<{ message: string }>('/signup', { method: 'POST', body: JSON.stringify({ username, password }) }),
-
-  logout: () => request<{ message: string }>('/logout', { method: 'POST' }),
-
-  me: () => request<{ username: string }>('/me'),
-
   streamGenerate: (topic: string) =>
     streamSSE('/generate_report', { method: 'POST', body: JSON.stringify({ topic }) }),
 
@@ -67,5 +70,11 @@ export const api = {
     streamSSE('/submit_feedback', { method: 'POST', body: JSON.stringify({ thread_id: threadId, feedback }) }),
 
   getStatus: (threadId: string) =>
-    request<{ status: string; docx_path?: string; pdf_path?: string }>(`/report_status/${threadId}`),
+    request<{ status: string; content?: string; docx_path?: string; pdf_path?: string }>(`/report_status/${threadId}`),
+
+  getReports: () =>
+    request<ReportRecord[]>('/reports'),
+
+  getReportContent: (threadId: string) =>
+    request<{ content: string; topic: string }>(`/report_content/${threadId}`),
 }
