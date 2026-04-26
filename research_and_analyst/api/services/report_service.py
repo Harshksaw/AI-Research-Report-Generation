@@ -1,5 +1,7 @@
 import uuid
 import os
+import json
+from typing import AsyncGenerator
 from fastapi.responses import FileResponse
 from research_and_analyst.utils.model_loader import ModelLoader
 from research_and_analyst.workflows.report_generator_workflow import AutonomousReportGenerator
@@ -45,6 +47,89 @@ class ReportService:
             self.logger.error("Error updating feedback", error=str(e))
             raise ResearchAnalystException("Failed to update feedback", e)
         
+    _WRITING_NODES = frozenset({"write_report", "write_introduction", "write_conclusion"})
+    _PARENT_NODES = frozenset({
+        "create_analyst", "human_feedback", "conduct_interview",
+        "write_report", "write_introduction", "write_conclusion", "finalize_report",
+    })
+
+    @staticmethod
+    def _sse(payload: dict) -> str:
+        return f"data: {json.dumps(payload)}\n\n"
+
+    async def astream_report_generation(self, topic: str, max_analysts: int) -> AsyncGenerator[str, None]:
+        """Stream phase-1 graph execution (create_analyst → human_feedback interrupt)."""
+        thread_id = str(uuid.uuid4())
+        thread = {"configurable": {"thread_id": thread_id}}
+        self.logger.info("Streaming report pipeline", topic=topic, thread_id=thread_id)
+        yield self._sse({"type": "thread_id", "thread_id": thread_id})
+        try:
+            async for chunk in self.graph.astream(
+                {"topic": topic, "max_analysts": max_analysts},
+                thread,
+                stream_mode=["updates", "messages"],
+            ):
+                mode, data = chunk
+                if mode == "updates":
+                    for node_name in data:
+                        if node_name in self._PARENT_NODES:
+                            yield self._sse({"type": "node_complete", "node": node_name})
+                elif mode == "messages":
+                    msg_chunk, metadata = data
+                    node_name = metadata.get("langgraph_node", "")
+                    if node_name in self._WRITING_NODES:
+                        content = getattr(msg_chunk, "content", "")
+                        if isinstance(content, list):
+                            content = "".join(
+                                b.get("text", "") if isinstance(b, dict) else str(b)
+                                for b in content
+                            )
+                        if content:
+                            yield self._sse({"type": "token", "node": node_name, "content": content})
+
+            state = self.graph.get_state(thread)
+            if state.next and "human_feedback" in state.next:
+                yield self._sse({"type": "interrupt"})
+            else:
+                yield self._sse({"type": "complete"})
+        except Exception as e:
+            self.logger.error("Error streaming report generation", error=str(e))
+            yield self._sse({"type": "error", "message": str(e)})
+
+    async def astream_feedback(self, thread_id: str, feedback: str) -> AsyncGenerator[str, None]:
+        """Stream phase-2 graph execution (interviews → writing → finalize)."""
+        thread = {"configurable": {"thread_id": thread_id}}
+        self.graph.update_state(thread, {"human_analyst_feedback": feedback}, as_node="human_feedback")
+        self.logger.info("Streaming feedback processing", thread_id=thread_id)
+        try:
+            async for chunk in self.graph.astream(
+                None,
+                thread,
+                stream_mode=["updates", "messages"],
+            ):
+                mode, data = chunk
+                if mode == "updates":
+                    for node_name in data:
+                        if node_name in self._PARENT_NODES:
+                            yield self._sse({"type": "node_complete", "node": node_name})
+                elif mode == "messages":
+                    msg_chunk, metadata = data
+                    node_name = metadata.get("langgraph_node", "")
+                    if node_name in self._WRITING_NODES:
+                        content = getattr(msg_chunk, "content", "")
+                        if isinstance(content, list):
+                            content = "".join(
+                                b.get("text", "") if isinstance(b, dict) else str(b)
+                                for b in content
+                            )
+                        if content:
+                            yield self._sse({"type": "token", "node": node_name, "content": content})
+
+            yield self._sse({"type": "complete"})
+        except Exception as e:
+            self.logger.error("Error streaming feedback", error=str(e))
+            yield self._sse({"type": "error", "message": str(e)})
+
     def get_report_status(self, thread_id: str):
         """Fetch latest state or final report."""
         try:

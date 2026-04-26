@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Cookie, HTTPException, Response
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from research_and_analyst.database.db_config import SessionLocal, User, hash_password, verify_password
 from research_and_analyst.api.services.report_service import ReportService
@@ -77,20 +78,25 @@ def logout(response: Response, session_id: str | None = Cookie(default=None)):
 
 
 @router.post("/generate_report")
-def generate_report(body: ReportRequest, session_id: str | None = Cookie(default=None)):
+async def generate_report(body: ReportRequest, session_id: str | None = Cookie(default=None)):
     _current_user(session_id)
     service = ReportService()
-    result = service.start_report_generation(body.topic, max_analysts=3)
-    return {"thread_id": result["thread_id"]}
+    return StreamingResponse(
+        service.astream_report_generation(body.topic, max_analysts=3),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.post("/submit_feedback")
-def submit_feedback(body: FeedbackRequest, session_id: str | None = Cookie(default=None)):
+async def submit_feedback(body: FeedbackRequest, session_id: str | None = Cookie(default=None)):
     _current_user(session_id)
     service = ReportService()
-    service.submit_feedback(body.thread_id, body.feedback)
-    status = service.get_report_status(body.thread_id)
-    return status
+    return StreamingResponse(
+        service.astream_feedback(body.thread_id, body.feedback),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.get("/report_status/{thread_id}")
