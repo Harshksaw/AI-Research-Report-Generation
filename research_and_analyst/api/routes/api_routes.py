@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Cookie, HTTPException, Response
+from fastapi import APIRouter, Cookie, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from research_and_analyst.database.db_config import SessionLocal, User, hash_password, verify_password
@@ -78,9 +78,9 @@ def logout(response: Response, session_id: str | None = Cookie(default=None)):
 
 
 @router.post("/generate_report")
-async def generate_report(body: ReportRequest, session_id: str | None = Cookie(default=None)):
+async def generate_report(request: Request, body: ReportRequest, session_id: str | None = Cookie(default=None)):
     _current_user(session_id)
-    service = ReportService()
+    service = ReportService(checkpointer=request.app.state.checkpointer)
     return StreamingResponse(
         service.astream_report_generation(body.topic, max_analysts=3),
         media_type="text/event-stream",
@@ -89,9 +89,9 @@ async def generate_report(body: ReportRequest, session_id: str | None = Cookie(d
 
 
 @router.post("/submit_feedback")
-async def submit_feedback(body: FeedbackRequest, session_id: str | None = Cookie(default=None)):
+async def submit_feedback(request: Request, body: FeedbackRequest, session_id: str | None = Cookie(default=None)):
     _current_user(session_id)
-    service = ReportService()
+    service = ReportService(checkpointer=request.app.state.checkpointer)
     return StreamingResponse(
         service.astream_feedback(body.thread_id, body.feedback),
         media_type="text/event-stream",
@@ -100,7 +100,7 @@ async def submit_feedback(body: FeedbackRequest, session_id: str | None = Cookie
 
 
 @router.get("/report_status/{thread_id}")
-def report_status(thread_id: str, session_id: str | None = Cookie(default=None)):
+async def report_status(request: Request, thread_id: str, session_id: str | None = Cookie(default=None)):
     _current_user(session_id)
-    service = ReportService()
-    return service.get_report_status(thread_id)
+    service = ReportService(checkpointer=request.app.state.checkpointer)
+    return await service.get_report_status(thread_id)

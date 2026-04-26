@@ -1,0 +1,11 @@
+.git
+.env
+*.db
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+frontend/node_modules
+static/react
+logs
+generated_report

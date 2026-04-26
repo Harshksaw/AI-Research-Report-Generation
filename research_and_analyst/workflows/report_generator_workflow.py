@@ -11,7 +11,6 @@ project_root = os.path.abspath(os.path.join(current_dir, "../../"))
 sys.path.append(project_root)
 
 from langgraph.graph import StateGraph, START, END
-from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
 
@@ -42,7 +41,7 @@ class AutonomousReportGenerator:
 
     def __init__(self, llm):
         self.llm = llm
-        self.memory = MemorySaver()
+        self.memory = None
         self.tavily_search = TavilySearchResults(
             tavily_api_key=os.getenv("TAVILY_API_KEY")
         )

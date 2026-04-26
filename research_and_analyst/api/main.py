@@ -1,13 +1,25 @@
+import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
-import os
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 from research_and_analyst.api.routes import report_routes, api_routes
 
-app = FastAPI(title="AI Research Report Generator")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    database_url = os.environ["DATABASE_URL"]
+    async with AsyncPostgresSaver.from_conn_string(database_url) as checkpointer:
+        await checkpointer.setup()
+        app.state.checkpointer = checkpointer
+        yield
+
+
+app = FastAPI(title="AI Research Report Generator", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,7 +49,6 @@ async def health_check():
 REACT_BUILD = os.path.join(os.getcwd(), "static", "react")
 
 if os.path.isdir(REACT_BUILD):
-    # Hashed JS/CSS chunks live here
     app.mount("/assets", StaticFiles(directory=os.path.join(REACT_BUILD, "assets")), name="react-assets")
 
     @app.get("/{full_path:path}", include_in_schema=False)
