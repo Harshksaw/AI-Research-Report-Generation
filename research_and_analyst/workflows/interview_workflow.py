@@ -1,5 +1,4 @@
 from langgraph.graph import StateGraph, START, END
-from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.messages import get_buffer_string
 from langgraph.types import Send
@@ -32,7 +31,6 @@ class InterviewGraphBuilder:
         """
         self.llm = llm
         self.tavily_search = tavily_search
-        self.memory = MemorySaver()
         self.logger = GLOBAL_LOGGER.bind(module="InterviewGraphBuilder")
 
     # ----------------------------------------------------------------------
@@ -177,7 +175,7 @@ class InterviewGraphBuilder:
             builder.add_edge("save_interview", "write_section")
             builder.add_edge("write_section", END)
 
-            graph = builder.compile(checkpointer=self.memory)
+            graph = builder.compile()
             self.logger.info("Interview Graph compiled successfully")
             return graph
 
